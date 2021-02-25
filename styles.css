@@ -74,6 +74,20 @@ body{
 
 }
 
+
+.btn-farm {
+	background: rgb(92, 50, 31);
+	height: 40px;
+	width: 40px;
+}
+
+.btn-farm.planted {
+	background: rgb(37, 153, 43);
+}
+
+.btn-farm:hover{
+	background: rgb(37, 153, 43);
+}
 /* 
 .inner {
 	position:absolute;
