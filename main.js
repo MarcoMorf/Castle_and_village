@@ -11,7 +11,7 @@ let config = {
         "move_time": 1,
         "bite_time": 1
     },
-
+    
     "villager": {
         1: {"blood_max": 5},
         2: {"blood_max": 3},
@@ -21,22 +21,14 @@ let config = {
 
     // New health system (probability-based)
     // Each villager has 3 possible states: dead <- sick <-> healthy
-    // healthy -> sick: 
-    //      based on amount of blood lost (e.g. mam 3 / 5 blood: blood_lost = 2)
-    //      lost_blood is used to lookup the probability that this villager gets sick
-    //
-    // sick -> healthy:
-    //      Fixed probability to heal. Simple for now.
-    //      Strawberry heals?
-    
-    "get_sick": [0, 0.3, 0.5, 0.8, 0.8, 1.0, 1.0, 1.0, 1.0], // e.g. A villager with 2 blood_lost has a probability of 50% to get sick
-    "get_healthy": 0.45,
+    "get_sick": 0.275, // Probability to get sick, every bite
+    "get_healthy": 0.5, // Probability to heal, at the end of the round
 
     // Blood healed per round:
     // e.g.If villager is healthy: [1, 2]   We randomly pick one from this list
-    "heal_healthy": [1, 2],
-    "heal_sick": [0, 1],
-    "heal_max": 3,
+    "heal_healthy": [1, 1, 2, 2, 2],
+    "heal_sick": [-1, -1, 0, 0, 0, 0, 1],
+    "heal_max": 4,
 
     //season config
     "length_season":{"summer": 4, "winter": 3},
@@ -103,15 +95,8 @@ function update_villager_health_end_of_round(){
 
         state = get_villager_state(ind);
 
-        // First we check if this villager transistions to another health state
-        if (state == "healthy"){
-            // Villager could get sick (certain probability)
-            let blood_lost = config["villager"][ind]["blood_max"] - villager["blood"];
-            let prob = config["get_sick"][blood_lost];
-            if (Math.random() < prob){
-                villager_gamestage[ind]["state"] = "sick"; // Update the state (is sick now)
-            }
-        } else if (state == "sick"){
+        // Sick villagers can heal at the end of the round
+        if (state == "sick"){
             // Villager could get healthy
             if (Math.random() < config["get_healthy"]){
                 villager_gamestage[ind]["state"] = "healthy";
@@ -149,19 +134,6 @@ function get_villager_state(ind){
         villager_gamestage[ind]["state"] = "dead";
     }
     return villager_gamestage[ind]["state"]
-    // blood_content = villager_gamestage[ind]["blood"];
-    // blood_content_upper = config["villager"][ind]["blood_max"];
-    // blood_content_threshold = blood_content_upper - 1;
-    
-    // if(blood_content_threshold<=blood_content && blood_content <= blood_content_upper){
-    //     return "healthy";
-    // }
-    // if(1<=blood_content&&blood_content<blood_content_threshold){
-    //     return "sick";
-    // }
-    // if(blood_content<=0){
-    //     return "dead";
-    // }
 }
 
 function game_over(){
@@ -236,6 +208,12 @@ function bite(){
         vampire_gamestage["blood_absorbed_alltime"] += 1;
         vampire_gamestage["blood_absorbed_today"] += 1;
         vampire_gamestage["action_left"] -= config["vampire"]["bite_time"];
+        
+        // Can get sick
+        if (Math.random() < config["get_sick"]){
+            villager_gamestage[pos]["state"] = "sick"; // Update the state (is sick now)
+        }
+
         game_over()
     }
     update_all();
