@@ -6,7 +6,7 @@ let round = 0;
 let config = {
     "vampire": {
         "start_blood": 0,
-        "num_actions": {"summer": 11, "winter": 9},
+        "num_actions": {"summer": 11, "winter": 10},
         "blood_needed_for_day": {"summer": 3, "winter": 6},
         "move_time": 1,
         "bite_time": 1
@@ -22,7 +22,7 @@ let config = {
     // New health system (probability-based)
     // Each villager has 3 possible states: dead <- sick <-> healthy
     "get_sick": 0.275, // Probability to get sick, every bite
-    "get_healthy": 0.5, // Probability to heal, at the end of the round
+    "get_healthy": 0.4, // Probability to heal, at the end of the round
 
     // Blood healed per round:
     // e.g.If villager is healthy: [1, 2]   We randomly pick one from this list
@@ -33,7 +33,9 @@ let config = {
     //season config
     "length_season":{"summer": 4, "winter": 3},
 
-    "grow_time": 2
+    "grow_time": 2,
+
+    "bite_cost_sick": [1, 1, 1, 2, 2]
 
 };
 
@@ -63,8 +65,8 @@ function get_season(){
 let vampire_gamestage = {
     "action_left": config["vampire"]["num_actions"][get_season()],
     "current_position_vampire": 0,
-    "blood_absorbed_today": 0,
-    "blood_absorbed_alltime": config["vampire"]["start_blood"],
+    "blood_alltime": 0,
+    "blood": config["vampire"]["start_blood"],
     "strawberry_count": 0,
     "left_castle": false
 };
@@ -122,6 +124,12 @@ function update_villager_health_end_of_round(){
             villager_gamestage[ind]["blood"] = max;
         }
 
+        // Check if villager died
+        if (villager_gamestage[ind]["blood"] <= 0){
+            villager_gamestage[ind]["state"] = "dead";
+            villager_gamestage[ind]["blood"] = 0;
+        }
+
         // Update bitten & healed
         villager_gamestage[ind]["bitten"] = false;
         villager_gamestage[ind]["healed"] = false;
@@ -130,13 +138,10 @@ function update_villager_health_end_of_round(){
 }
 
 function get_villager_state(ind){
-    if (villager_gamestage[ind]["blood"] == 0){
-        villager_gamestage[ind]["state"] = "dead";
-    }
     return villager_gamestage[ind]["state"]
 }
 
-function game_over(){
+function check_round_over(){
     do_it = false;
     if(vampire_gamestage["action_left"] <= 0){
         do_it = true;
@@ -150,17 +155,17 @@ function game_over(){
         var season = get_season();
 
         // Blood every round
-        vampire_gamestage["blood_absorbed_alltime"] -= config["vampire"]["blood_needed_for_day"][season];
+        vampire_gamestage["blood"] -= config["vampire"]["blood_needed_for_day"][season];
 
         // blood to go home
 
         // extra_blood = config["vampire"]["move_time"]; // vampire_gamestage["current_position_vampire"] - vampire_gamestage["action_left"];
 
         // if (extra_blood > 0) {
-        //     vampire_gamestage["blood_absorbed_alltime"] -= extra_blood;
+        //     vampire_gamestage["blood"] -= extra_blood;
         // }
 
-        if(vampire_gamestage["blood_absorbed_alltime"] < 0 || vampire_gamestage["current_position_vampire"] != 0){
+        if(vampire_gamestage["blood"] < 0 || vampire_gamestage["current_position_vampire"] != 0 || villager_gamestage[1]["state"] == "dead" || villager_gamestage[4]["state"] == "dead"){
             alert("GAME OVER!");
             location.reload();
         }
@@ -175,15 +180,6 @@ function game_over(){
         vampire_gamestage["action_left"] = config["vampire"]["num_actions"][season_new];
         vampire_gamestage["left_castle"] = false;
 
-        // New baby every summer
-        if (season_new == "summer" && season == "winter"){
-            if (villager_gamestage[1]["state"] != "dead" && villager_gamestage[4]["state"] != "dead") 
-            villager_gamestage[3] = {"blood": 2, "state": "healthy", "bitten": false, "healed": false};
-        }
-
-        if (round == 2 * (config["length_season"]["summer"] + config["length_season"]["winter"])){
-            alert("You won!\nSuch a successfull canibal!");
-        }
         // Strawberry farms
         for (var i = 0; i < 2; i++){
             if (farm_gamestage[i] != -1){
@@ -196,17 +192,36 @@ function game_over(){
             }
         }
 
+        if (round == 2 * (config["length_season"]["summer"] + config["length_season"]["winter"])){
+            points = vampire_gamestage["blood_alltime"] - 60;
+            update_all();
+            alert("You won!\nSuch a successfull cannibal!\n\Blood: "+points);
+        }
+
+        //Year 2
+        if (season_new == "summer" && season == "winter"){
+            // New baby every summer
+            villager_gamestage[3] = {"blood": 2, "state": "healthy", "bitten": false, "healed": false};
+            config["villager"]["2"]["blood_max"] += 1;
+        }
+
+        
+
     }
 }
 
 function bite(){
     pos = vampire_gamestage["current_position_vampire"];
     if(villager_gamestage[pos]["blood"] > 0 && villager_gamestage[pos]["healed"] == false){
-        villager_gamestage[pos]["blood"] -= 1;
+        bite_cost = 1;
+        if (villager_gamestage[pos]["state"] == "sick"){
+            bite_cost = random_choice(config["bite_cost_sick"])
+        }
+        villager_gamestage[pos]["blood"] -= bite_cost;
         villager_gamestage[pos]["bitten"] = true;
 
-        vampire_gamestage["blood_absorbed_alltime"] += 1;
-        vampire_gamestage["blood_absorbed_today"] += 1;
+        vampire_gamestage["blood"] += 1;
+        vampire_gamestage["blood_alltime"] += 1;
         vampire_gamestage["action_left"] -= config["vampire"]["bite_time"];
         
         // Can get sick
@@ -214,7 +229,13 @@ function bite(){
             villager_gamestage[pos]["state"] = "sick"; // Update the state (is sick now)
         }
 
-        game_over()
+        // Check if villager died
+        if (villager_gamestage[pos]["blood"] <= 0){
+            villager_gamestage[pos]["state"] = "dead";
+            villager_gamestage[pos]["blood"] = 0;
+        }
+
+        check_round_over()
     }
     update_all();
 }
@@ -224,16 +245,16 @@ function move(to_state){
     vampire_gamestage["action_left"] -= config["vampire"]["move_time"]; // Math.abs(vampire_gamestage["current_position_vampire"]-to_state)
     vampire_gamestage["current_position_vampire"] = to_state
     vampire_gamestage["left_castle"]=true;
-    game_over()
+    check_round_over()
 
     update_all();
 }
 
 function get_strawberry(){
-    if(vampire_gamestage["blood_absorbed_alltime"]>=1 && vampire_gamestage["current_position_vampire"]==0){
+    if(vampire_gamestage["blood"]>=1 && vampire_gamestage["current_position_vampire"]==0){
         vampire_gamestage["strawberry_count"]+=1
-        vampire_gamestage["blood_absorbed_alltime"]-=1;
-        game_over()
+        vampire_gamestage["blood"]-=1;
+        check_round_over()
     }
     update_all();
 
@@ -249,7 +270,7 @@ function give_strawberry(){
         villager_gamestage[pos]["state"] = "healthy";
         villager_gamestage[pos]["healed"] = true;
         vampire_gamestage["strawberry_count"]-=1
-        game_over()
+        check_round_over()
     }
     update_all();
 }
@@ -257,9 +278,9 @@ function give_strawberry(){
 
 function plant(field){
     if (vampire_gamestage["current_position_vampire"] == 0){
-        if (farm_gamestage[field] == -1 && vampire_gamestage["blood_absorbed_alltime"] > 0) {
+        if (farm_gamestage[field] == -1 && vampire_gamestage["blood"] > 0) {
             farm_gamestage[field] = 0;
-            vampire_gamestage["blood_absorbed_alltime"] -= 1;
+            vampire_gamestage["blood"] -= 1;
         }
     }
     update_all();
@@ -339,7 +360,7 @@ function update_all(){
     }
 
     //update strawberrycount and blood of vampire
-    $("#blood_count_alltime").text(vampire_gamestage["blood_absorbed_alltime"]);
+    $("#blood_count_alltime").text(vampire_gamestage["blood"]);
     $("#strawberry_count").text(vampire_gamestage["strawberry_count"]);
 
     // Update blood per round
