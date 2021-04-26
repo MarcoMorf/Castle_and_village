@@ -6,7 +6,7 @@ let round = 0;
 let config = {
     "vampire": {
         "start_blood": 0,
-        "num_actions": {"summer": 11, "winter": 10},
+        "num_actions": {"summer": 10, "winter": 9},
         "blood_needed_for_day": {"summer": 3, "winter": 6},
         "move_time": 1,
         "bite_time": 1
@@ -82,7 +82,12 @@ let villager_gamestage = {
 let farm_gamestage = [-1, -1];
 
 $( document ).ready(function() {
+    
+    $('#season_dial').css('transform','rotate(26deg)');
+
     update_all();
+    var myModal = new bootstrap.Modal(document.getElementById('startModal'))
+    myModal.show();
 });
 
 
@@ -158,19 +163,33 @@ function check_round_over(){
         vampire_gamestage["blood"] -= config["vampire"]["blood_needed_for_day"][season];
 
         // blood to go home
-
         // extra_blood = config["vampire"]["move_time"]; // vampire_gamestage["current_position_vampire"] - vampire_gamestage["action_left"];
-
         // if (extra_blood > 0) {
         //     vampire_gamestage["blood"] -= extra_blood;
         // }
 
-        if(vampire_gamestage["blood"] < 0 || vampire_gamestage["current_position_vampire"] != 0 || villager_gamestage[1]["state"] == "dead" || villager_gamestage[4]["state"] == "dead"){
-            alert("GAME OVER!");
-            location.reload();
-        }
-
+        // Need to do this before we check whether parents are alive
         update_villager_health_end_of_round();
+
+        // Trigger two different game over popups, and reload game on popup hide.
+        if(vampire_gamestage["blood"] < 0) {
+            var myModal = new bootstrap.Modal(document.getElementById('gameOverStarveModal'));
+            myModal.show();
+
+            var myModalEl = document.getElementById('gameOverStarveModal')
+            myModalEl.addEventListener('hide.bs.modal', function (event) {
+                location.reload();
+            });
+        
+        } else if (villager_gamestage[1]["state"] == "dead" || villager_gamestage[4]["state"] == "dead") {
+            var myModal = new bootstrap.Modal(document.getElementById('gameOverFamilyModal'));
+            myModal.show();
+
+            var myModalEl = document.getElementById('gameOverFamilyModal')
+            myModalEl.addEventListener('hide.bs.modal', function (event) {
+                location.reload();
+            });
+        }
 
         // new round
         round += 1;
@@ -179,6 +198,11 @@ function check_round_over(){
         vampire_gamestage["current_position_vampire"] = 0;
         vampire_gamestage["action_left"] = config["vampire"]["num_actions"][season_new];
         vampire_gamestage["left_castle"] = false;
+        
+        // Season
+        var year = config["length_season"]["summer"] + config["length_season"]["winter"];
+        angle = (round % year) * (360 / year) + 26;
+        $('#season_dial').css('transform','rotate(' + angle + 'deg)');
 
         // Strawberry farms
         for (var i = 0; i < 2; i++){
@@ -194,8 +218,10 @@ function check_round_over(){
 
         if (round == 2 * (config["length_season"]["summer"] + config["length_season"]["winter"])){
             points = vampire_gamestage["blood_alltime"] - 60;
-            update_all();
-            alert("You won!\nSuch a successfull cannibal!\n\Blood: "+points);
+
+            $("#winScore").html(points);
+            var myModal = new bootstrap.Modal(document.getElementById('winModal'));
+            myModal.show();
         }
 
         //Year 2
@@ -205,9 +231,8 @@ function check_round_over(){
             config["villager"]["2"]["blood_max"] += 1;
         }
 
-        
-
     }
+    update_all();
 }
 
 function bite(){
@@ -237,7 +262,6 @@ function bite(){
 
         check_round_over()
     }
-    update_all();
 }
 
 function move(to_state){
@@ -246,8 +270,6 @@ function move(to_state){
     vampire_gamestage["current_position_vampire"] = to_state
     vampire_gamestage["left_castle"]=true;
     check_round_over()
-
-    update_all();
 }
 
 function get_strawberry(){
@@ -256,7 +278,6 @@ function get_strawberry(){
         vampire_gamestage["blood"]-=1;
         check_round_over()
     }
-    update_all();
 
 }
 
@@ -272,7 +293,6 @@ function give_strawberry(){
         vampire_gamestage["strawberry_count"]-=1
         check_round_over()
     }
-    update_all();
 }
 
 
@@ -281,9 +301,9 @@ function plant(field){
         if (farm_gamestage[field] == -1 && vampire_gamestage["blood"] > 0) {
             farm_gamestage[field] = 0;
             vampire_gamestage["blood"] -= 1;
+            update_all();
         }
     }
-    update_all();
 }
 
 
@@ -292,12 +312,13 @@ function update_all(){
     //update current VAmpire position
     position = vampire_gamestage["current_position_vampire"]
     for (let ind = 0; ind < 5; ind++) {
+        
         if(position == ind){
             $("#p" + ind +"-here").show();
-            $("#p" + ind +"-btn-move").hide();
+            // $("#p" + ind +"-btn-move").hide();
         } else {
             $("#p" + ind +"-here").hide();
-            $("#p" + ind +"-btn-move").show();
+            // $("#p" + ind +"-btn-move").show();
         }
     }
 
@@ -350,8 +371,23 @@ function update_all(){
         }
     }
 
-    //update remaining steps
-    $(".remaining_steps").text(vampire_gamestage["action_left"]);
+    //update the remaining time
+    var hours = config["vampire"]["num_actions"][get_season()];
+    for (var i = 0; i < 11; i++){
+        var el = $("#time" + i);
+        if (i < hours) {
+            if (i == hours - vampire_gamestage["action_left"]){
+                el.attr("src","Bilder/time_marker.png");
+            } else {
+                el.attr("src","Bilder/time_bg.png");
+            }
+            el.show();
+        
+        // hide some of the hour markers
+        } else {
+            el.hide();
+        }
+    }
 
     // update health of villager
     for (let ind = 1; ind < 5; ind++) {

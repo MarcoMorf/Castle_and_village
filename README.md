@@ -4,18 +4,22 @@ The most anticipated game of the year. You, a vampire, live in your castle on th
 
 ### ToDo: Code, Balance & Other
 
-- [] Make people clickable
+- [x] Make people clickable
+- [x] No going home
 - [] What is a good score (points)? Give user feedback about their performance.
 - [] How to publish? A little marketing?
 
 
 ### ToDo: Graphics
+1 Tutorial Popup, Title Screen?
+2 Time & season
+3 Visual style winter
 
-- [] Tutorial Popup
-- [] Strawberry field
-- [] Time & Season indicator
+- [x] Tutorial Popup
+- [x] Strawberry field
+- [x] Time & Season indicator
 - [] Grown up teen?
-- [] Game Over Message
-- [] Win Message
-- [] Visual Style: Winter
-- [] Title Screen?
+- [x] Game Over Message
+- [x] Win Message
+- [(x)] Visual Style: Winter
+- [x] Title Screen?

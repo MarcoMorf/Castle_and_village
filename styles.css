@@ -16,6 +16,17 @@ body{
 .bat-img-large{
 	height: 50px;
 }
+.bat-img-large-top{
+	height: 50px;
+	width: 100px;
+	z-index: 1;
+	position: absolute;
+	transform: translate(0, -160px);
+}
+
+.top-no-transform{
+	transform: translate(200px, 0);
+}
 .here-img-small {
 	height: 50px;
 }
@@ -30,6 +41,19 @@ body{
 	padding-top: 12px;
 	padding-bottom: 12px;
 }
+
+.btn-blue{
+	background-color: rgba(50, 50, 250, 1);
+	border: 0px;
+	font-size: 12pt;
+	padding-top: 0px;
+	padding-bottom: 0px;
+}
+
+.btn-primary-outline {
+	background-color: transparent;
+	border-color: rgba(204, 204, 204, 0);
+  }
 
 .btn-primary:hover{
 	background-color: rgba(50, 50, 50, 0.9);
@@ -92,3 +116,48 @@ body{
 .inner {
 	position:absolute;
 } */
+
+/* .top {
+	position: absolute;
+	left: 50px;
+	top: 50px;
+	border: 1px solid black;
+	z-index: 1;
+} */
+
+/* MODALS */
+.modal-dialog {
+	max-width: 600px;
+}
+
+.centered {
+	text-align: center;
+}
+
+/* Season & time ui */
+.time_icon{
+	width: 38px;
+	margin-top: 5px;
+	/* margin-left: 10px; */
+}
+
+#season_bg {
+	position: relative;
+	top: 0;
+	left: 0;
+	width: 100px;
+}
+
+#season_dial {
+	width: 20px;
+	position: absolute;
+	top: 15px;
+	left: 40px;
+	transform-origin: bottom center;
+}
+
+#season_container {
+	position: relative;
+	top: 0;
+	left: 0;
+}
